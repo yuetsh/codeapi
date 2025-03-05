@@ -42,13 +42,13 @@ func main() {
 
 	r.Use(cors.New(config))
 
-	r.GET("", func(c *gin.Context) {
+	r.GET("/", func(c *gin.Context) {
 		var codes []PresetCode
 		db.Order("id desc").Find(&codes)
 		c.JSON(http.StatusOK, gin.H{"data": codes})
 	})
 
-	r.GET("/:query", func(c *gin.Context) {
+	r.GET("/query/:query", func(c *gin.Context) {
 		var code PresetCode
 		db.Where("query = ?", c.Param("query")).First(&code)
 		if code.Code != "" {
@@ -58,7 +58,7 @@ func main() {
 		}
 	})
 
-	r.POST("", func(c *gin.Context) {
+	r.POST("/", func(c *gin.Context) {
 		var input PresetCodeInput
 		if err := c.ShouldBindJSON(&input); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -73,7 +73,7 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"data": code})
 	})
 
-	r.DELETE(":id", func(c *gin.Context) {
+	r.DELETE("/:id", func(c *gin.Context) {
 		var code PresetCode
 		if err := db.Where("id = ?", c.Param("id")).First(&code).Error; err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Record not found!"})

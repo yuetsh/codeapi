@@ -84,5 +84,7 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"data": true})
 	})
 
+	gin.SetMode(gin.ReleaseMode)
+
 	r.Run()
 }

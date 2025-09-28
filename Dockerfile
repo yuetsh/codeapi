@@ -11,6 +11,7 @@ COPY main.go ./
 RUN go build -o api
 
 FROM alpine:3.20 AS certs
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositories
 RUN apk add --no-cache ca-certificates
 
 FROM scratch

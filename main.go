@@ -135,20 +135,20 @@ func main() {
 
 		defer stream.Close()
 
+		flusher, ok := c.Writer.(http.Flusher)
+		if !ok {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "streaming not supported"})
+			return
+		}
+
 		header := c.Writer.Header()
 		header.Set("Content-Type", "text/event-stream; charset=utf-8")
 		header.Set("Cache-Control", "no-cache")
 		header.Set("Connection", "keep-alive")
 
-		if _, ok := c.Writer.(http.Flusher); !ok {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "streaming not supported"})
-			return
-		}
-		if flusher, ok := c.Writer.(http.Flusher); ok {
-			flusher.Flush()
-		}
-
 		c.Status(http.StatusOK)
+		c.Writer.WriteHeaderNow()
+		flusher.Flush()
 
 		replacer := strings.NewReplacer("\r\n", "\n", "\r", "\n")
 
@@ -160,25 +160,30 @@ func main() {
 			if data, ok := payload["data"].(string); ok {
 				sanitized["data"] = replacer.Replace(data)
 			}
-			bytes, err := json.Marshal(sanitized)
+
+			body, err := json.Marshal(sanitized)
 			if err != nil {
 				log.Printf("failed to marshal sse payload: %v", err)
 				return
 			}
+
 			if event != "" {
-				fmt.Fprintf(w, "event: %s\n", event)
+				if _, err := fmt.Fprintf(w, "event: %s\n", event); err != nil {
+					log.Printf("failed to write sse event: %v", err)
+					return
+				}
 			}
-			fmt.Fprintf(w, "data: %s\n\n", bytes)
+
+			if _, err := fmt.Fprintf(w, "data: %s\n\n", body); err != nil {
+				log.Printf("failed to write sse data: %v", err)
+				return
+			}
+
+			flusher.Flush()
 		}
 
-		sentDone := false
-
 		c.Stream(func(w io.Writer) bool {
-			if sentDone {
-				return false
-			}
-
-			for stream.Next() {
+			if stream.Next() {
 				chunk := stream.Current()
 				var builder strings.Builder
 				for _, choice := range chunk.Choices {
@@ -186,19 +191,21 @@ func main() {
 						builder.WriteString(choice.Delta.Content)
 					}
 				}
+
 				if builder.Len() == 0 {
-					continue
+					return true
 				}
+
 				writeSSE(w, "chunk", gin.H{"data": builder.String()})
 				return true
 			}
 
-			sentDone = true
 			if err := stream.Err(); err != nil {
 				writeSSE(w, "error", gin.H{"message": err.Error()})
 			}
+
 			writeSSE(w, "done", gin.H{"data": ""})
-			return true
+			return false
 		})
 	})
 

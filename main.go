@@ -144,6 +144,9 @@ func main() {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "streaming not supported"})
 			return
 		}
+		if flusher, ok := c.Writer.(http.Flusher); ok {
+			flusher.Flush()
+		}
 
 		c.Status(http.StatusOK)
 

@@ -136,7 +136,9 @@ func main() {
 		defer stream.Close()
 
 		header := c.Writer.Header()
-		header.Set("Content-Type", "text/event-stream")
+		header.Set("Content-Type", "text/event-stream; charset=utf-8")
+		header.Set("Cache-Control", "no-cache")
+		header.Set("Connection", "keep-alive")
 
 		if _, ok := c.Writer.(http.Flusher); !ok {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "streaming not supported"})

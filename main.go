@@ -51,6 +51,7 @@ func main() {
 	config.AllowOrigins = []string{
 		"https://code.xuyue.cc",
 		"http://code.xuyue.cc",
+		"http://10.13.114.114:82",
 		"http://localhost:3000",
 	}
 

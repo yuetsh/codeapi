@@ -12,7 +12,6 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
-	"github.com/joho/godotenv"
 	"github.com/openai/openai-go/v2"
 	"github.com/openai/openai-go/v2/option"
 	"gorm.io/gorm"
@@ -31,11 +30,6 @@ type PresetCodeInput struct {
 }
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	db, err := gorm.Open(sqlite.Open("database.db"), &gorm.Config{})
 
 	if err != nil {
@@ -113,9 +107,8 @@ func main() {
 		systemPrompt := "你是编程老师，擅长分析代码和错误信息，一般出错在语法和格式，请指出错误在第几行，并给出中文的、简要的解决方法。用 markdown 格式返回。"
 		userPrompt := fmt.Sprintf("编程语言：%s\n代码：\n```%s\n```\n错误信息：\n```%s\n```", payload.Language, payload.Code, payload.ErrorInfo)
 
-		apiKey := os.Getenv("API_KEY")
-
-		if apiKey == "" {
+		apiKey, ok := os.LookupEnv("API_KEY")
+		if !ok || apiKey == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "API_KEY is not set"})
 			return
 		}

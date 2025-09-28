@@ -6,7 +6,7 @@ COPY go.mod go.sum ./
 RUN go env -w GO111MODULE=on
 RUN go env -w GOPROXY=https://goproxy.cn,direct
 RUN go mod download
-COPY main.go .env ./
+COPY main.go ./
 
 RUN go build -o api
 
